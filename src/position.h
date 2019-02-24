@@ -176,13 +176,13 @@ private:
   void do_castling(Color us, Square from, Square& to, Square& rfrom, Square& rto);
 
   // Data members
-  Piece board[SQUARE_NB];
+  int8_t board[SQUARE_NB];
   Bitboard byTypeBB[PIECE_TYPE_NB];
   Bitboard byColorBB[COLOR_NB];
   int pieceCount[PIECE_NB];
   Square pieceList[PIECE_NB][16];
-  int index[SQUARE_NB];
-  int castlingRightsMask[SQUARE_NB];
+  int8_t index[SQUARE_NB];
+  int8_t castlingRightsMask[SQUARE_NB];
   Square castlingRookSquare[CASTLING_RIGHT_NB];
   Bitboard castlingPath[CASTLING_RIGHT_NB];
   int gamePly;
@@ -208,11 +208,11 @@ inline bool Position::empty(Square s) const {
 }
 
 inline Piece Position::piece_on(Square s) const {
-  return board[s];
+  return (Piece)board[s];
 }
 
 inline Piece Position::moved_piece(Move m) const {
-  return board[from_sq(m)];
+  return (Piece)board[from_sq(m)];
 }
 
 inline Bitboard Position::pieces() const {
