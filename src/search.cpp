@@ -335,7 +335,7 @@ void Thread::search() {
   int ct = int(Options["Contempt"]) * PawnValueEg / 100; // From centipawns
 
   // Reduce contempt by nearness to the 50 moves draw.
-  ct = (325 - rootPos.rule50_count()) * ct / 325;
+  ct = ((300 - rootPos.rule50_count()) * ct + 150) / 300;
 
   // In analysis mode, adjust contempt in accordance with user preference
   if (Limits.infinite || Options["UCI_AnalyseMode"])
