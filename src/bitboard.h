@@ -284,15 +284,18 @@ inline Bitboard attacks_bb(PieceType pt, Square s, Bitboard occupied) {
 
 
 /// popcount() counts the number of non-zero bits in a bitboard
+
 template <bool> struct PopCnt {};
 
 template <> struct PopCnt<false> {
-  void init() {
+  void init()
+  {
       for (unsigned i = 0; i < (1 << 16); ++i)
           PopCnt16[i] = std::bitset<16>(i).count();
   }
 
-  int operator () (Bitboard b) const {
+  int operator () (Bitboard b) const
+  {
       union { Bitboard bb; uint16_t u[4]; } v = { b };
 
       return   PopCnt16[v.u[0]]
