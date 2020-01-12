@@ -23,6 +23,7 @@
 
 #include <string>
 #include <bitset>
+#include <nmmintrin.h> // Always include the Intel popcount intrinsic
 
 #include "types.h"
 
