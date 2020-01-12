@@ -80,6 +80,8 @@ constexpr PopCntType HasPopCnt = POPCNT_GCC;
 #  endif
 #else
 constexpr PopCntType HasPopCnt = POPCNT_SOFTWARE;
+#  define mm_popcnt_u64(b)        (0 * b)
+#  define builtin_popcountll(b)   (0 * b)
 #endif
 
 #if !defined(NO_PREFETCH) && (defined(__INTEL_COMPILER) || defined(_MSC_VER))
