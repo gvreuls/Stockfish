@@ -65,9 +65,7 @@
 #  define IS_64BIT
 #endif
 
-#if defined(USE_POPCNT)
-#  include <nmmintrin.h>
-#endif
+#include <nmmintrin.h> // Always include the Intel popcount intrinsic
 
 #if !defined(NO_PREFETCH) && (defined(__INTEL_COMPILER) || defined(_MSC_VER))
 #  include <xmmintrin.h> // Intel and Microsoft header for _mm_prefetch()
