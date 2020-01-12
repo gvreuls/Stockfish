@@ -309,7 +309,7 @@ template <> struct PopCnt<POPCNT_SOFTWARE> {
 
 template <> struct PopCnt<POPCNT_GCC> {
   void init() {}
-  int operator () (Bitboard b) const { return __builtin_popcountll(b); }
+  int operator () (Bitboard b) const { return builtin_popcountll(b); }
 };
 
 template <> struct PopCnt<POPCNT_INTEL> {
