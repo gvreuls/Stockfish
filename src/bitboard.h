@@ -309,7 +309,7 @@ template <> struct PopCnt<false> {
 
 template <> struct PopCnt<true> {
   void init() {}
-  int operator () (Bitboard b) const { return std::bitset<64>(b).count(); }
+  int operator () (Bitboard b) const { return (int)_mm_popcnt_u64(b); }
 };
 
 extern PopCnt<HasPopCnt> popcount;
