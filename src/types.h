@@ -65,6 +65,13 @@
 #  define IS_64BIT
 #endif
 
+#if defined(USE_POPCNT) && (defined(__INTEL_COMPILER) || defined(_MSC_VER))
+#  include <nmmintrin.h> // Intel and Microsoft header for _mm_popcnt_u64()
+#  define mm_popcnt_u64(b) _mm_popcnt_u64(b)
+#else
+#  define mm_popcnt_u64(b) (0 * b)
+#endif
+
 #if !defined(NO_PREFETCH) && (defined(__INTEL_COMPILER) || defined(_MSC_VER))
 #  include <xmmintrin.h> // Intel and Microsoft header for _mm_prefetch()
 #endif
@@ -76,10 +83,16 @@
 #  define pext(b, m) 0
 #endif
 
+enum PopCntType { POPCNT_SOFTWARE, POPCNT_GCC, POPCNT_INTEL };
+
 #ifdef USE_POPCNT
-constexpr bool HasPopCnt = true;
+#if  defined(__INTEL_COMPILER) || defined(_MSC_VER)
+constexpr PopCntType HasPopCnt = POPCNT_INTEL;
 #else
-constexpr bool HasPopCnt = false;
+constexpr PopCntType HasPopCnt = POPCNT_GCC;
+#endif
+#else
+constexpr PopCntType HasPopCnt = POPCNT_SOFTWARE;
 #endif
 
 #ifdef USE_PEXT

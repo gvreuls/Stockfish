@@ -23,7 +23,6 @@
 
 #include <string>
 #include <bitset>
-#include <nmmintrin.h> // Always include the Intel popcount intrinsic
 
 #include "types.h"
 
@@ -286,9 +285,9 @@ inline Bitboard attacks_bb(PieceType pt, Square s, Bitboard occupied) {
 
 /// popcount() counts the number of non-zero bits in a bitboard
 
-template <bool> struct PopCnt {};
+template <PopCntType> struct PopCnt {};
 
-template <> struct PopCnt<false> {
+template <> struct PopCnt<POPCNT_SOFTWARE> {
   void init()
   {
       for (unsigned i = 0; i < (1 << 16); ++i)
@@ -308,9 +307,14 @@ template <> struct PopCnt<false> {
   uint8_t PopCnt16[1 << 16];
 };
 
-template <> struct PopCnt<true> {
+template <> struct PopCnt<POPCNT_GCC> {
   void init() {}
-  int operator () (Bitboard b) const { return (int)_mm_popcnt_u64(b); }
+  int operator () (Bitboard b) const { return __builtin_popcountll(b); }
+};
+
+template <> struct PopCnt<POPCNT_INTEL> {
+  void init() {}
+  int operator () (Bitboard b) const { return (int)mm_popcnt_u64(b); }
 };
 
 extern PopCnt<HasPopCnt> popcount;
