@@ -18,6 +18,10 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifdef __linux__
+#  include <sys/mman.h>
+#endif
+
 #include <cstring>   // For std::memset
 #include <iostream>
 #include <thread>
@@ -63,10 +67,28 @@ void TranspositionTable::resize(size_t mbSize) {
 
   Threads.main()->wait_for_search_finished();
 
-  clusterCount = mbSize * 1024 * 1024 / sizeof(Cluster);
+  if (Options["Use Large Memory Pages"])
+      mbSize = std::max((size_t)LargePageSizeMB, mbSize / LargePageSizeMB * LargePageSizeMB);
+
+  const size_t alignment =   Options["Use Large Memory Pages"]
+                           ? LargePageSizeMB * 1024 * 1024
+                           : CacheLineSize;
+  const size_t size = mbSize * 1024 * 1024;
 
   free(mem);
-  mem = malloc(clusterCount * sizeof(Cluster) + CacheLineSize - 1);
+
+#ifdef __linux__
+  mem = aligned_alloc(alignment, size);
+  table = (Cluster*)mem;
+
+  if (Options["Use Large Memory Pages"])
+      madvise(mem, size, MADV_HUGEPAGE);
+  madvise(mem, size, MADV_WILLNEED);
+
+#else
+  mem = malloc(size + alignment - 1);
+  table = (Cluster*)((uintptr_t(mem) + alignment - 1) & ~(alignment - 1));
+#endif
 
   if (!mem)
   {
@@ -75,7 +97,6 @@ void TranspositionTable::resize(size_t mbSize) {
       exit(EXIT_FAILURE);
   }
 
-  table = (Cluster*)((uintptr_t(mem) + CacheLineSize - 1) & ~(CacheLineSize - 1));
   clear();
 }
 
