@@ -81,9 +81,11 @@ void TranspositionTable::resize(size_t mbSize) {
   mem = aligned_alloc(alignment, size);
   table = (Cluster*)mem;
 
-  if (Options["Use Large Memory Pages"])
-      madvise(mem, size, MADV_HUGEPAGE);
-  madvise(mem, size, MADV_WILLNEED);
+  if (mem) {
+      if (Options["Use Large Memory Pages"])
+          madvise(mem, size, MADV_HUGEPAGE);
+      madvise(mem, size, MADV_WILLNEED);
+  }
 
 #else
   mem = malloc(size + alignment - 1);
