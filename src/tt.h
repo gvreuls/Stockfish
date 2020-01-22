@@ -68,7 +68,7 @@ class TranspositionTable {
 
   static constexpr int CacheLineSize = 64;
   static constexpr int ClusterSize = 3;
-  static constexpr int LargePageSizeMB= 2;
+  static constexpr int LargePageSizeMB = 2;
 
   struct Cluster {
     TTEntry entry[ClusterSize];

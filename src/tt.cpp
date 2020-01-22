@@ -75,6 +75,8 @@ void TranspositionTable::resize(size_t mbSize) {
                            : CacheLineSize;
   const size_t size = mbSize * 1024 * 1024;
 
+  clusterCount = size / sizeof(Cluster);
+
   free(mem);
 
 #ifdef __linux__
