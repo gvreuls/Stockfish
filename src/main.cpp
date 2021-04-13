@@ -16,6 +16,10 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #include <iostream>
 
 #include "bitboard.h"
@@ -32,12 +36,12 @@ using namespace Stockfish;
 
 int main(int argc, char* argv[]) {
 
-  std::cout << engine_info() << std::endl;
+#ifdef _WIN32
+  SetConsoleCP(65001);
+  SetConsoleOutputCP(65001);
+#endif
 
-  // Calling the stream imbue() method on streams that are synced to system
-  // streams is implementation defined so we have to stop syncing first.
-  std::ios_base::sync_with_stdio(false);
-  std::cin.imbue(std::locale(""));
+  std::cout << engine_info() << std::endl;
 
   CommandLine::init(argc, argv);
   UCI::init(Options);
