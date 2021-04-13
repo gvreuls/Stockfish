@@ -34,6 +34,11 @@ int main(int argc, char* argv[]) {
 
   std::cout << engine_info() << std::endl;
 
+  // Calling the stream imbue() method on streams that are synced to system
+  // streams is implementation defined so we have to stop syncing first.
+  std::ios_base::sync_with_stdio(false);
+  std::cin.imbue(std::locale(""));
+
   CommandLine::init(argc, argv);
   UCI::init(Options);
   Tune::init();
