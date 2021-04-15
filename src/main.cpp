@@ -16,7 +16,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifdef _WIN32
+#if (_MSC_VER || __MINGW32__ || __MSVCRT__)
 #include <windows.h>
 #endif
 
@@ -36,9 +36,8 @@ using namespace Stockfish;
 
 int main(int argc, char* argv[]) {
 
-#ifdef _WIN32
-  SetConsoleCP(65001);
-  SetConsoleOutputCP(65001);
+#if (_MSC_VER || __MINGW32__ || __MSVCRT__)
+    _setmode(_fileno(stdin), _O_WTEXT);
 #endif
 
   std::cout << engine_info() << std::endl;
