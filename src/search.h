@@ -69,12 +69,12 @@ struct RootMove {
                             : m.previousScore < previousScore;
   }
 
+  std::vector<Move> pv;
   Value score = -VALUE_INFINITE;
   Value previousScore = -VALUE_INFINITE;
   int selDepth = 0;
   int tbRank = 0;
   Value tbScore;
-  std::vector<Move> pv;
 };
 
 typedef std::vector<RootMove> RootMoves;
@@ -87,8 +87,8 @@ struct LimitsType {
 
   LimitsType() { // Init explicitly due to broken value-initialization of non POD in MSVC
     time[WHITE] = time[BLACK] = inc[WHITE] = inc[BLACK] = npmsec = movetime = TimePoint(0);
-    movestogo = depth = mate = perft = infinite = 0;
     nodes = 0;
+    movestogo = depth = mate = perft = infinite = 0;
   }
 
   bool use_time_management() const {
@@ -97,8 +97,8 @@ struct LimitsType {
 
   std::vector<Move> searchmoves;
   TimePoint time[COLOR_NB], inc[COLOR_NB], npmsec, movetime, startTime;
-  int movestogo, depth, mate, perft, infinite;
   int64_t nodes;
+  int movestogo, depth, mate, perft, infinite;
 };
 
 extern LimitsType Limits;
