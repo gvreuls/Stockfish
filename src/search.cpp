@@ -791,7 +791,7 @@ Value Search::Worker::search(
     // Step 4. Transposition table lookup
     excludedMove                   = ss->excludedMove;
     posKey                         = pos.key();
-    auto [ttHit, ttData, ttWriter] = tt.probe(posKey);
+    auto [ttHit, ttData, ttWriter] = tt.probe_write(posKey);
     // Need further processing of the saved data
     ss->ttHit    = ttHit;
     ttData.move  = rootNode ? rootMoves[pvIdx].pv[0] : ttHit ? ttData.move : Move::none();
@@ -873,7 +873,7 @@ Value Search::Worker::search(
             {
                 pos.do_move(ttData.move, st);
                 Key nextPosKey                             = pos.key();
-                auto [ttHitNext, ttDataNext, ttWriterNext] = tt.probe(nextPosKey);
+                auto [ttHitNext, ttDataNext] = tt.probe_read(nextPosKey);
                 pos.undo_move(ttData.move);
 
                 // Check that the ttValue after the tt move would also trigger a cutoff
@@ -1638,7 +1638,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
 
     // Step 3. Transposition table lookup
     posKey                         = pos.key();
-    auto [ttHit, ttData, ttWriter] = tt.probe(posKey);
+    auto [ttHit, ttData, ttWriter] = tt.probe_write(posKey);
     // Need further processing of the saved data
     ss->ttHit    = ttHit;
     ttData.move  = ttHit ? ttData.move : Move::none();
@@ -2281,7 +2281,7 @@ bool RootMove::extract_ponder_from_tt(const TranspositionTable& tt, Position& po
 
     if (!pos.is_draw(1))
     {
-        auto [ttHit, ttData, ttWriter] = tt.probe(pos.key());
+        auto [ttHit, ttData] = tt.probe_read(pos.key());
         if (ttHit && MoveList<LEGAL>(pos).contains(ttData.move))
             pv.push_back(ttData.move);
     }

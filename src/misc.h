@@ -355,7 +355,7 @@ class RelaxedAtomic {
 #endif
 
    public:
-    RelaxedAtomic() = default;
+    constexpr RelaxedAtomic() = default;
     RelaxedAtomic(T val) :
         inner(val) {}
     RelaxedAtomic(const RelaxedAtomic& a) :
@@ -374,7 +374,7 @@ class RelaxedAtomic {
         return *this;
     }
 
-    operator T() const {
+    constexpr operator T() const {
         if constexpr (UseAtomic)
             return inner.load(std::memory_order_relaxed);
         else
@@ -417,7 +417,7 @@ class RelaxedAtomic {
         return *this;
     }
 
-    T load(std::memory_order order) const {
+    constexpr T load(std::memory_order order) const {
         assert(order == std::memory_order_relaxed);
         if constexpr (UseAtomic)
             return inner.load(order);
@@ -481,7 +481,7 @@ class PRNG {
     }
 };
 
-inline usize mul_hi64(u64 a, usize b) {
+inline constexpr usize mul_hi64(u64 a, usize b) {
 #if defined(__GNUC__) && defined(IS_64BIT) && !defined(__wasm__)
     return (u128(a) * u128(b)) >> 64;
 #else
