@@ -25,6 +25,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <string>
+#include <type_traits>
 
 #include "types.h"
 #include "misc.h"
@@ -33,7 +34,6 @@ namespace Stockfish {
 
 namespace Bitboards {
 
-void        init();
 std::string pretty(Bitboard b);
 
 }  // namespace Stockfish::Bitboards
@@ -64,9 +64,6 @@ constexpr Bitboard Rank5BB = Rank1BB << (8 * 4);
 constexpr Bitboard Rank6BB = Rank1BB << (8 * 5);
 constexpr Bitboard Rank7BB = Rank1BB << (8 * 6);
 constexpr Bitboard Rank8BB = Rank1BB << (8 * 7);
-
-extern u8 PopCnt16[1 << 16];
-extern u8 SquareDistance[SQUARE_NB][SQUARE_NB];
 
 constexpr Bitboard square_bb(Square s) {
     assert(is_ok(s));
@@ -137,32 +134,51 @@ constexpr Bitboard pawn_single_push_bb(Color c, Bitboard b) {
 // number of steps for a king in x to reach y.
 
 template<typename T1 = Square>
-inline int distance(Square x, Square y);
+inline constexpr int distance(Square x, Square y);
 
 template<>
-inline int distance<File>(Square x, Square y) {
-    return std::abs(file_of(x) - file_of(y));
+inline constexpr int distance<File>(Square x, Square y) {
+    return constexpr_abs(file_of(x) - file_of(y));
 }
 
 template<>
-inline int distance<Rank>(Square x, Square y) {
-    return std::abs(rank_of(x) - rank_of(y));
+inline constexpr int distance<Rank>(Square x, Square y) {
+    return constexpr_abs(rank_of(x) - rank_of(y));
 }
 
+namespace {
+
+constexpr auto SquareDistance = []() {
+    std::array<std::array<u8, SQUARE_NB>, SQUARE_NB> result{};
+
+    for (Square s1 = SQ_A1; s1 <= SQ_H8; ++s1)
+        for (Square s2 = SQ_A1; s2 <= SQ_H8; ++s2)
+            result[s1][s2] = std::max(distance<File>(s1, s2), distance<Rank>(s1, s2));
+
+    return result;
+}();
+
+} // anonymous namespace
+
 template<>
-inline int distance<Square>(Square x, Square y) {
+inline constexpr int distance<Square>(Square x, Square y) {
     return SquareDistance[x][y];
 }
 
-inline int edge_distance(File f) { return std::min(f, File(FILE_H - f)); }
+inline constexpr int edge_distance(File f) { return std::min(f, File(FILE_H - f)); }
 
+namespace {
 
-constexpr int constexpr_popcount(Bitboard b) {
-    b = b - ((b >> 1) & 0x5555555555555555ULL);
-    b = (b & 0x3333333333333333ULL) + ((b >> 2) & 0x3333333333333333ULL);
-    b = (b + (b >> 4)) & 0x0F0F0F0F0F0F0F0FULL;
-    return static_cast<int>((b * 0x0101010101010101ULL) >> 56);
-}
+constexpr auto PopCnt16 = []() {
+    std::array<u8, 1 << 16> result{};
+
+    for (int i = 0; i < (1 << 16); ++i)
+        result[i] = constexpr_popcount(i);
+
+    return result;
+}();
+
+} // anonymous namespace
 
 // Counts the number of non-zero bits in a bitboard.
 inline int popcount(Bitboard b) {
@@ -185,10 +201,14 @@ inline int popcount(Bitboard b) {
 #endif
 }
 
+namespace {
+
 inline constexpr int lsb_index64[64] = {
   0,  47, 1,  56, 48, 27, 2,  60, 57, 49, 41, 37, 28, 16, 3,  61, 54, 58, 35, 52, 50, 42,
   21, 44, 38, 32, 29, 23, 17, 11, 4,  62, 46, 55, 26, 59, 40, 36, 15, 53, 34, 51, 20, 43,
   31, 22, 10, 45, 25, 39, 14, 33, 19, 30, 9,  24, 13, 18, 8,  12, 7,  6,  5,  63};
+
+} // anonymous namespace
 
 constexpr int constexpr_lsb(u64 bb) {
     assert(bb != 0);

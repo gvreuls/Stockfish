@@ -500,6 +500,60 @@ inline constexpr T2 interpolate(T1 x, T1 x0, T1 x1, T2 y0, T2 y1) {
     return T2(y0 + (y1 - y0) * (x - x0) / (x1 - x0));
 }
 
+template <typename T>
+inline constexpr int constexpr_popcount(T v) {
+    static_assert(std::is_integral_v<T>, "constexpr_popcount is undefined for non-integral types");
+
+    auto b = static_cast<std::make_unsigned_t<T>>(v);
+
+    if constexpr (sizeof(T) == 8)
+    {
+        b = b - ((b >> 1) & 0x5555555555555555ULL);
+        b = (b & 0x3333333333333333ULL) + ((b >> 2) & 0x3333333333333333ULL);
+        b = (b + (b >> 4)) & 0x0F0F0F0F0F0F0F0FULL;
+        return static_cast<int>((b * 0x0101010101010101ULL) >> 56);
+    }
+    else if constexpr (sizeof(T) == 4)
+    {
+        b = b - ((b >> 1) & 0x55555555UL);
+        b = (b & 0x33333333UL) + ((b >> 2) & 0x33333333UL);
+        b = (b + (b >> 4)) & 0x0F0F0F0FUL;
+        return static_cast<int>((b * 0x01010101UL) >> 24);
+    }
+    else if constexpr (sizeof(T) == 2)
+    {
+        b = b - ((b >> 1) & 0x5555U);
+        b = (b & 0x3333U) + ((b >> 2) & 0x3333U);
+        b = (b + (b >> 4)) & 0x0F0FU;
+        return static_cast<int>((b * 0x0101U) >> 8);
+    }
+    else if constexpr (sizeof(T) == 1)
+    {
+        b = b - ((b >> 1) & 0x55U);
+        b = (b & 0x33U) + ((b >> 2) & 0x33U);
+        b = (b + (b >> 4)) & 0x0FU;
+        return static_cast<int>(b);
+    }
+    else
+    {
+        int result = 0;
+        for (; b; b >>= static_cast<T>(1))
+            if (b & static_cast<T>(1))
+                ++result;
+        return result;
+    }
+}
+
+template <typename T>
+inline constexpr T constexpr_abs(T v) {
+    static_assert(std::is_arithmetic_v<T>, "constexpr_abs is undefined for non-arithmetic types");
+
+    if constexpr (std::is_signed_v<T>)
+        return v < static_cast<T>(0) ? -v : v;
+    else
+        return v;
+}
+
 u64 hash_bytes(const char*, usize);
 
 template<typename T>
