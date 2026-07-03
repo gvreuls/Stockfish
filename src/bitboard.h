@@ -130,42 +130,7 @@ constexpr Bitboard pawn_single_push_bb(Color c, Bitboard b) {
     return c == WHITE ? shift<NORTH>(b) : shift<SOUTH>(b);
 }
 
-// distance() functions return the distance between x and y, defined as the
-// number of steps for a king in x to reach y.
-
-template<typename T1 = Square>
-inline constexpr int distance(Square x, Square y);
-
-template<>
-inline constexpr int distance<File>(Square x, Square y) {
-    return constexpr_abs(file_of(x) - file_of(y));
-}
-
-template<>
-inline constexpr int distance<Rank>(Square x, Square y) {
-    return constexpr_abs(rank_of(x) - rank_of(y));
-}
-
-namespace {
-
-constexpr auto SquareDistance = []() {
-    std::array<std::array<u8, SQUARE_NB>, SQUARE_NB> result{};
-
-    for (Square s1 = SQ_A1; s1 <= SQ_H8; ++s1)
-        for (Square s2 = SQ_A1; s2 <= SQ_H8; ++s2)
-            result[s1][s2] = std::max(distance<File>(s1, s2), distance<Rank>(s1, s2));
-
-    return result;
-}();
-
-} // anonymous namespace
-
-template<>
-inline constexpr int distance<Square>(Square x, Square y) {
-    return SquareDistance[x][y];
-}
-
-inline constexpr int edge_distance(File f) { return std::min(f, File(FILE_H - f)); }
+constexpr int edge_distance(File f) { return std::min(f, File(FILE_H - f)); }
 
 namespace {
 

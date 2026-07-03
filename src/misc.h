@@ -544,16 +544,6 @@ inline constexpr int constexpr_popcount(T v) {
     }
 }
 
-template <typename T>
-inline constexpr T constexpr_abs(T v) {
-    static_assert(std::is_arithmetic_v<T>, "constexpr_abs is undefined for non-arithmetic types");
-
-    if constexpr (std::is_signed_v<T>)
-        return v < static_cast<T>(0) ? -v : v;
-    else
-        return v;
-}
-
 u64 hash_bytes(const char*, usize);
 
 template<typename T>
