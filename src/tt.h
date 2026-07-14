@@ -61,6 +61,8 @@ struct TTData {
     // clang-format on
 };
 
+using ClusterKey = Key;
+
 
 // This is used to make racy, non-atomic writes to the global TT. Writes are not "guaranteed":
 // for chess reasons, we may decide the new data is less important than the old.
@@ -71,8 +73,12 @@ struct TTWriter {
 
    private:
     friend class TranspositionTable;
-    TTEntry* entry;
-    TTWriter(TTEntry* tte);
+    Cluster* cluster;
+    int      index;
+    TTWriter(Cluster*, int);
+    TTEntry& entry() const;
+    ClusterKey get_key() const;
+    void set_key(ClusterKey);
 };
 
 
@@ -96,11 +102,9 @@ class TranspositionTable {
     //   3) a writer object to the entry
     std::tuple<bool, TTData, TTWriter> probe(const Key key) const;
     // The hash function; its only external use is memory prefetching
-    TTEntry* first_entry(const Key key) const;
+    Cluster* first_entry(const Key key) const;
 
    private:
-    friend struct TTEntry;
-
     usize    clusterCount;
     Cluster* table = nullptr;
 
