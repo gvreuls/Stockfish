@@ -21,7 +21,10 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
+#include <csetjmp>
+#include <csignal>
 #include <cstdlib>
+#include <ios>
 #include <iterator>
 #include <optional>
 #include <sstream>
@@ -52,6 +55,39 @@ struct overload: Ts... {
 
 template<typename... Ts>
 overload(Ts...) -> overload<Ts...>;
+
+// Reads a line from input stream, sets failbit if input was interrupted by SIGINT.
+// Pending input can be read after clearing the stream failure.
+template<typename CharT, typename Traits, typename Alloc>
+inline std::basic_istream<CharT, Traits>&
+interruptable_getline(std::basic_istream<CharT, Traits>&       is,
+                      std::basic_string<CharT, Traits, Alloc>& str,
+                      CharT                                    delim) {
+    static thread_local std::jmp_buf jmp_ctx;
+
+    auto prev_handler = std::signal(SIGINT, [](int) { std::longjmp(jmp_ctx, true); });
+
+    if (setjmp(jmp_ctx))
+    {
+        std::signal(SIGINT, prev_handler);
+        is.setstate(is.rdstate() | std::ios_base::failbit);
+    }
+    else
+    {
+        std::getline(is, str, delim);
+        if (prev_handler != SIG_ERR)
+            std::signal(SIGINT, prev_handler);
+    }
+
+    return is;
+}
+
+template<typename CharT, typename Traits, typename Alloc>
+inline std::basic_istream<CharT, Traits>&
+interruptable_getline(std::basic_istream<CharT, Traits>&       is,
+                      std::basic_string<CharT, Traits, Alloc>& str) {
+    return interruptable_getline(is, str, is.widen('\n'));
+}
 
 void UCIEngine::print_info_string(std::string_view str) {
     sync_cout_start();
@@ -96,7 +132,8 @@ void UCIEngine::loop() {
     do
     {
         if (cli.argc == 1
-            && !getline(std::cin, cmd))  // Wait for an input or an end-of-file (EOF) indication
+            && !interruptable_getline(std::cin,
+                                      cmd))  // Wait for an input or an end-of-file (EOF) indication
             cmd = "quit";
 
         currentCmd = cmd;
