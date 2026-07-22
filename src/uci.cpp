@@ -25,6 +25,7 @@
 #include <csignal>
 #include <cstdlib>
 #include <ios>
+#include <iostream>
 #include <iterator>
 #include <optional>
 #include <sstream>
@@ -65,6 +66,13 @@ interruptable_getline(std::basic_istream<CharT, Traits>&       is,
                       CharT                                    delim) {
     static thread_local std::jmp_buf jmp_ctx;
 
+#if defined(__USE_POSIX)
+    sigset_t block_sigs;
+    sigemptyset(&block_sigs);
+    sigaddset(&block_sigs, SIGCONT);
+    sigprocmask(SIG_BLOCK, &block_sigs, nullptr);
+#endif
+
     auto prev_handler = std::signal(SIGINT, [](int) { std::longjmp(jmp_ctx, true); });
 
     if (setjmp(jmp_ctx))
@@ -75,9 +83,13 @@ interruptable_getline(std::basic_istream<CharT, Traits>&       is,
     else
     {
         std::getline(is, str, delim);
-        if (prev_handler != SIG_ERR)
+        if (prev_handler != SIG_ERR && prev_handler != SIG_IGN)
             std::signal(SIGINT, prev_handler);
     }
+
+#if defined(__USE_POSIX)
+    sigprocmask(SIG_UNBLOCK, &block_sigs, nullptr);
+#endif
 
     return is;
 }
