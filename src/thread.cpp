@@ -349,17 +349,22 @@ void ThreadPool::start_thinking(const OptionsMap&  options,
 Thread* ThreadPool::get_best_thread() const {
 
     Thread* bestThread = threads.front().get();
-    Value   minScore   = VALUE_INFINITE;
+    Value   minScore   = VALUE_NONE;
 
     std::unordered_map<Move, i64, Move::MoveHash> votes(
       2 * std::min(size(), bestThread->worker->rootMoves.size()));
 
+    // Find the minimum score of all threads
     for (auto&& th : threads)
         minScore = std::min(minScore, th->worker->rootMoves[0].score);
 
-    // Vote according to score, and select the best thread
+    // Vote according to score and depth, and select the best thread
+    auto thread_voting_value = [minScore](Thread* th) {
+        return (th->worker->rootMoves[0].score - minScore + 14) * int(th->worker->rootDepth);
+    };
+
     for (auto&& th : threads)
-        votes[th->worker->rootMoves[0].pv[0]] += th->worker->rootMoves[0].score - minScore + 14;
+        votes[th->worker->rootMoves[0].pv[0]] += thread_voting_value(th.get());
 
     for (auto&& th : threads)
     {
@@ -377,6 +382,11 @@ Thread* ThreadPool::get_best_thread() const {
                                     && is_decisive(newThreadMove.score)
                                     && !newThreadMove.score_is_bound();
 
+        // We make sure not to pick a thread with a truncated principal variation.
+        const bool betterVotingValue =
+          thread_voting_value(th.get()) * int(newThreadMove.pv.size() > 2)
+          > thread_voting_value(bestThread) * int(bestThreadMove.pv.size() > 2);
+
         if (bestThreadDecisive)
         {
             // Make sure we pick the shortest mate / TB conversion.
@@ -391,8 +401,7 @@ Thread* ThreadPool::get_best_thread() const {
         else if (newThreadDecisive
                  || (!is_loss(newThreadMove.score)
                      && (newThreadMoveVote > bestThreadMoveVote
-                         || (newThreadMoveVote == bestThreadMoveVote
-                             && newThreadMove.pv.size() > bestThreadMove.pv.size()))))
+                         || (newThreadMoveVote == bestThreadMoveVote && betterVotingValue))))
             bestThread = th.get();
     }
 
