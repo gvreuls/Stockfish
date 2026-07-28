@@ -158,6 +158,19 @@ bool is_shuffling(Move move, Stack* const ss, const Position& pos) {
         && (ss - 2)->currentMove.from_sq() == (ss - 4)->currentMove.to_sq();
 }
 
+// Calculate the futility pruning cutoff depth. This function is important for mate finding.
+// Its constants are implemented as template parameters to discourage tuning.
+template<int MinDepth, int MaxDepth, Value Threshold, int Scale>
+inline int futility_depth(Value rootEval, Value eval, Value beta) {
+    static_assert(MinDepth < MaxDepth && MinDepth > 0, "futility_depth: invalid depth range");
+    static_assert(Threshold > 0, "futility_depth: invalid threshold");
+    static_assert(Scale > 0, "futility_depth: invalid scale");
+
+    return std::abs(rootEval) < Threshold
+           ? MaxDepth
+           : (MinDepth + (MaxDepth - MinDepth) / (1 + (std::abs(beta) + std::abs(eval)) / Scale));
+}
+
 }  // namespace
 
 Search::Worker::Worker(SharedState&                    sharedState,
@@ -977,9 +990,9 @@ Value Search::Worker::search(
         return qsearch<NonPV>(pos, ss, alpha, beta);
 
     // Step 8. Futility pruning: child node
-    // The depth condition is important for mate finding.
-    if (!ss->ttPv && depth < 19 && eval >= beta && (!ttData.move || ttCapture) && !is_loss(beta)
-        && !is_win(eval))
+    // The depth condition is important for mate finding. It shouldn't be tuned.
+    if (!ss->ttPv && eval >= beta && (!ttData.move || ttCapture) && !is_loss(beta) && !is_win(eval)
+        && depth < futility_depth<13, 19, 3640, 1565>(rootMoves[0].score, eval, beta))
     {
         Value futilityMult = std::min(45 + depth * 4, 85);
         futilityMult -= 20 * !ss->ttHit;
