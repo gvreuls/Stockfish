@@ -982,7 +982,7 @@ Value Search::Worker::search(
     // Step 8. Futility pruning: child node
     // The depth condition is important for mate finding.
     if (!ss->ttPv && eval >= beta && (!ttData.move || ttCapture) && !is_loss(beta)
-        && !is_win(eval) && depth < (13 + 7 / (1 + sqr(i64(std::abs(beta) + std::abs(eval))) / 8376723)))
+        && !is_win(eval) && depth < (13 + 6 / (1 + sqr(i64(std::abs(beta) + std::abs(eval))) / 8376723)))
     {
         Value futilityMult = std::min(45 + depth * 4, 85);
         futilityMult -= 20 * !ss->ttHit;
