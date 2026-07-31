@@ -158,9 +158,6 @@ bool is_shuffling(Move move, Stack* const ss, const Position& pos) {
         && (ss - 2)->currentMove.from_sq() == (ss - 4)->currentMove.to_sq();
 }
 
-template<typename T>
-constexpr auto sqr(T&& x) -> decltype(x * x) { return x * x; }
-
 }  // namespace
 
 Search::Worker::Worker(SharedState&                    sharedState,
@@ -982,7 +979,7 @@ Value Search::Worker::search(
     // Step 8. Futility pruning: child node
     // The depth condition is important for mate finding.
     if (!ss->ttPv && eval >= beta && (!ttData.move || ttCapture) && !is_loss(beta) && !is_win(eval)
-        &&  depth < (std::abs(rootMoves[0].score) < 3764 ? 19 : 13))
+        &&  depth < (std::abs(rootMoves[0].score) < 3764 ? 19 : (13 + 6 / (1 + (std::abs(beta) + std::abs(eval)) / 1588))))
     {
         Value futilityMult = std::min(45 + depth * 4, 85);
         futilityMult -= 20 * !ss->ttHit;
