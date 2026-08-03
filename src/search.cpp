@@ -160,14 +160,15 @@ bool is_shuffling(Move move, Stack* const ss, const Position& pos) {
 
 // Look up the futility pruning cutoff depth. This function is important for mate finding.
 inline int futility_depth(Value eval, Value beta) {
-    static constexpr std::array Lut { Value(6695), 6300, 5849, 5324, 4642, 3685, 0 };
+    // LUT values obtained from depth = 13 + int(0.5 + 6 / int(1 + pow(abs(eval) + abs(beta), 3) / 50'000'000'000))
+    static constexpr std::array Lut{Value(1657), 2555, 3294, 4122, 5314, 8194, VALUE_INFINITE * 2};
 
-    const Value prob = std::abs(eval) + std::abs(beta);
-    int depth = 0;
-    while (Lut[depth] > prob)
+    const Value prob  = std::abs(eval) + std::abs(beta);
+    int         depth = 0;
+    while (Lut[depth] < prob)
         ++depth;
 
-    return depth + 13;
+    return 19 - depth;
 }
 
 }  // namespace
