@@ -158,17 +158,58 @@ bool is_shuffling(Move move, Stack* const ss, const Position& pos) {
         && (ss - 2)->currentMove.from_sq() == (ss - 4)->currentMove.to_sq();
 }
 
+template<typename T>
+constexpr auto sqr(T&& x) -> decltype(x * x) {
+    return x * x;
+}
+
+template<typename T>
+constexpr auto cube(T&& x) -> decltype(sqr(x) * x) {
+    return sqr(x) * x;
+}
+
 // Look up the futility pruning cutoff depth. This function is important for mate finding.
 inline int futility_depth(Value eval, Value beta) {
-    // LUT values obtained from:
-    //      depth = 13 + int(0.5 + 6 / int(1 + pow(abs(eval) + abs(beta), 3) / 50'000'000'000))
-    static constexpr std::array Lut{Value(1657), 2555, 3294, 4122, 5314, 8194, VALUE_INFINITE * 2};
-    const Value                 prob  = std::abs(eval) + std::abs(beta);
-    int                         depth = 0;
-    while (Lut[depth] < prob)
-        ++depth;
+    constexpr double Scale    = 5e10;
+    constexpr int    MinDepth = 13;
+    constexpr int    MaxDepth = 19;
+    constexpr int    Steps    = MaxDepth - MinDepth;
+    static_assert(MinDepth > 0 && Steps > 0, "invalid futility_depth cutoff depth range");
 
-    return 19 - depth;
+    static constexpr auto Lut = []() {
+        std::array<Value, Steps + 1> result{};
+        Value                        threshold = VALUE_ZERO;
+        int                          depth     = MaxDepth;
+        for (int i = 0; i != Steps; ++i)
+        {
+            for (;;)
+            {
+                const int newDepth =
+                  MinDepth + int(0.5 + Steps / (1.0 + cube(i64(threshold)) / Scale));
+                
+                if (newDepth != depth)
+                {
+                    depth     = newDepth;
+                    result[i] = threshold++;
+
+                    break;
+                }
+
+                ++threshold;
+            }
+        }
+
+        result[Steps] = VALUE_INFINITE * 2;
+
+        return result;
+    }();
+
+    const Value prob = std::abs(eval) + std::abs(beta);
+    int         step = 0;
+    while (Lut[step] < prob)
+        ++step;
+
+    return MaxDepth - step;
 }
 
 }  // namespace
