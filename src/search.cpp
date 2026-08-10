@@ -170,9 +170,9 @@ constexpr auto cube(T&& x) -> decltype(sqr(x) * x) {
 
 // Look up the futility pruning cutoff depth. This function is important for mate finding.
 inline int futility_depth(Value eval, Value beta) {
-    constexpr double Scale    = 5e10;
-    constexpr int    MinDepth = 13;
-    constexpr int    MaxDepth = 19;
+    constexpr double Scale    = 2e10;
+    constexpr int    MinDepth = 12;
+    constexpr int    MaxDepth = 20;
     constexpr int    Steps    = MaxDepth - MinDepth;
     static_assert(MinDepth > 0 && Steps > 0, "invalid futility_depth cutoff depth range");
 
