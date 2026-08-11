@@ -28,6 +28,7 @@
 #include <cstdlib>
 #include <initializer_list>
 #include <iostream>
+#include <limits>
 #include <list>
 #include <ratio>
 #include <string>
@@ -158,39 +159,31 @@ bool is_shuffling(Move move, Stack* const ss, const Position& pos) {
         && (ss - 2)->currentMove.from_sq() == (ss - 4)->currentMove.to_sq();
 }
 
-template<typename T>
-constexpr auto sqr(T&& x) -> decltype(x * x) {
-    return x * x;
-}
-
-template<typename T>
-constexpr auto cube(T&& x) -> decltype(sqr(x) * x) {
-    return sqr(x) * x;
-}
-
 // Look up the futility pruning cutoff depth. This function is important for mate finding.
 inline int futility_depth(Value eval, Value beta) {
-    constexpr double Scale    = 2e10;
+    constexpr double Scale    = 27e9;
     constexpr int    MinDepth = 12;
     constexpr int    MaxDepth = 20;
     constexpr int    Steps    = MaxDepth - MinDepth;
-    static_assert(MinDepth > 0 && Steps > 0, "invalid futility_depth cutoff depth range");
+    static_assert(MinDepth > 0 && Steps > 0, "invalid futility_depth cutoff range");
 
+    // Compile time generate the LUT with threshold values.
     static constexpr auto Lut = []() {
         std::array<Value, Steps + 1> result{};
         Value                        threshold = VALUE_ZERO;
         int                          depth     = MaxDepth;
-        for (int i = 0; i != Steps; ++i)
+        for (int step = 0; step != Steps; ++step)
         {
             for (;;)
             {
                 const int newDepth =
-                  MinDepth + int(0.5 + Steps / (1.0 + cube(i64(threshold)) / Scale));
-                
+                  MinDepth
+                  + int(0.5 + Steps / (1.0 + (i64(threshold) * threshold * threshold) / Scale));
+
                 if (newDepth != depth)
                 {
-                    depth     = newDepth;
-                    result[i] = threshold++;
+                    depth        = newDepth;
+                    result[step] = threshold++;
 
                     break;
                 }
@@ -199,7 +192,7 @@ inline int futility_depth(Value eval, Value beta) {
             }
         }
 
-        result[Steps] = VALUE_INFINITE * 2;
+        result[Steps] = std::numeric_limits<Value>::max();  // impassable threshold sentinel
 
         return result;
     }();
@@ -1042,7 +1035,7 @@ Value Search::Worker::search(
         return qsearch<NonPV>(pos, ss, alpha, beta);
 
     // Step 8. Futility pruning: child node
-    // The depth condition is important for mate finding. It shouldn't be tuned.
+    // The depth condition is important for mate finding.
     if (!ss->ttPv && eval >= beta && (!ttData.move || ttCapture) && !is_loss(beta) && !is_win(eval)
         && depth < futility_depth(eval, beta))
     {
