@@ -161,7 +161,7 @@ bool is_shuffling(Move move, Stack* const ss, const Position& pos) {
 
 // Look up the futility pruning cutoff depth. This function is important for mate finding.
 inline int futility_depth(Value eval, Value beta) {
-    constexpr double Scale    = 2.15e10;  // lower values improve mate finding
+    constexpr double Scale    = 1.75e10;  // lower values improve mate finding
     constexpr int    MinDepth = 12;
     constexpr int    MaxDepth = 20;
     constexpr int    Steps    = MaxDepth - MinDepth;
