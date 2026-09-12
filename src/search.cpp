@@ -28,9 +28,11 @@
 #include <cstdlib>
 #include <initializer_list>
 #include <iostream>
+#include <limits>
 #include <list>
 #include <ratio>
 #include <string>
+#include <type_traits>
 #include <utility>
 
 #include "bitboard.h"
@@ -157,6 +159,76 @@ bool is_shuffling(Move move, Stack* const ss, const Position& pos) {
         return false;
     return move.from_sq() == (ss - 2)->currentMove.to_sq()
         && (ss - 2)->currentMove.from_sq() == (ss - 4)->currentMove.to_sq();
+}
+
+template<typename T, typename = std::enable_if_t<std::is_signed_v<T>>>
+constexpr inline T compiletime_abs(T x) {
+    const T result = x < 0 ? -x : x;
+    return result;
+}
+
+constexpr inline double compiletime_sqrt(double x, double precision = 5e-16) {
+    if (x < 0.0)
+        return std::numeric_limits<double>::quiet_NaN();
+
+    precision *= x;
+
+    double min    = x < 1.0 ? x : 1.0;
+    double max    = x < 1.0 ? 1.0 : x;
+    double result = (max - min) * 0.5 + min;
+    double sqr    = result * result;
+    while (compiletime_abs(sqr - x) > precision)
+    {
+        if (sqr > x)
+            max = result;
+        else
+            min = result;
+
+        result = (max - min) * 0.5 + min;
+        sqr    = result * result;
+    }
+
+    return result;
+}
+
+inline int dynamic_depth(Value eval) {
+    constexpr double      Scale    = 0.14684;
+    constexpr int         MinDepth = 18;
+    constexpr int         MaxDepth = 25;
+    constexpr int         Steps    = MaxDepth - MinDepth;
+    static constexpr auto Lut      = []() {
+        std::array<Value, Steps + 1> result{};
+
+        Value max = 0;
+        for (int step = 0, depth = MaxDepth - 1; step != Steps; ++step, --depth)
+        {
+            Value min = max + 1;
+            max       = VALUE_INFINITE;
+            while (min < max)
+            {
+                const Value mid = (max - min) / 2 + min;
+                const int   newDepth =
+                  static_cast<int>(0.5 + MinDepth + Steps / (compiletime_sqrt(mid) * Scale));
+
+                if (newDepth > depth)
+                    min = mid + 1;
+                else
+                    max = mid;
+            }
+            result[step] = max;
+        }
+        result[Steps] = std::numeric_limits<Value>::max();
+
+        return result;
+    }();
+    static_assert(Lut[Steps - 1] < VALUE_INFINITE, "dynamic_depth Scale too small");
+
+    const Value target = std::abs(eval);
+    int         step   = 0;
+    while (Lut[step] < target)
+        ++step;
+
+    return MaxDepth - step;
 }
 
 }  // namespace
@@ -1001,8 +1073,8 @@ Value Search::Worker::search(
 
     // Step 9. Futility pruning: child node
     // The depth condition is important for mate finding. It should NOT be tuned.
-    if (!ss->ttPv && depth < (seekMate ? 6 : 19) && eval >= beta && (!ttData.move || ttCapture)
-        && !is_loss(beta) && !is_win(eval))
+    if (!ss->ttPv && eval >= beta && (!ttData.move || ttCapture) && !is_loss(beta) && !is_win(eval)
+        && depth < (seekMate ? 6 : dynamic_depth(eval)))
     {
         Value futilityMult = std::min(45 + depth * 4, 85);
         futilityMult -= 20 * !ss->ttHit;
