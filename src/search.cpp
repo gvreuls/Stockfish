@@ -192,9 +192,9 @@ constexpr inline double compiletime_sqrt(double x, double precision = 5e-16) {
 }
 
 inline int dynamic_depth(Value eval) {
-    constexpr double      Scale    = 0.14684;
-    constexpr int         MinDepth = 18;
-    constexpr int         MaxDepth = 25;
+    constexpr double      Scale    = 0.04021;
+    constexpr int         MinDepth = 17;
+    constexpr int         MaxDepth = 19;
     constexpr int         Steps    = MaxDepth - MinDepth;
     static constexpr auto Lut      = []() {
         std::array<Value, Steps + 1> result{};
